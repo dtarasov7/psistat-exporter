@@ -1,0 +1,24 @@
+@startuml
+title Threshold Event Detection
+
+skinparam shadowing false
+
+[*] --> ReadPercent
+
+ReadPercent : calculate selected interval
+ReadPercent --> WaitingForSamples : percentage is NaN
+WaitingForSamples --> ReadPercent : next collection
+
+ReadPercent --> BelowThreshold : rounded percent < threshold
+BelowThreshold --> ReadPercent : next collection
+
+ReadPercent --> Cooldown : now < event floor
+Cooldown --> ReadPercent : floor expired
+
+ReadPercent --> EventRecorded : percent >= threshold\nand floor expired
+EventRecorded : increment psistat_event_total
+EventRecorded : store timestamp and percent
+EventRecorded : set floor = now + interval
+EventRecorded --> ReadPercent : next collection
+
+@enduml

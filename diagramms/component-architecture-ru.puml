@@ -1,0 +1,26 @@
+@startuml
+title psistat-exporter: компонентная архитектура
+
+skinparam componentStyle rectangle
+skinparam shadowing false
+
+actor "Prometheus" as Prometheus
+
+node "Linux host" {
+    database "/proc/pressure/cpu\n/proc/pressure/io\n/proc/pressure/memory" as Proc
+    component "PressureGroup readers\n(cpu, io, memory)" as Readers
+    component "PsiCollector\nфоновый сборщик" as Collector
+    collections "Общее PSI state\nsamples, averages, events, health" as State
+    component "MetricsHandler\nThreadingHTTPServer" as HTTP
+    component "TLS wrapper\nопционально" as TLS
+}
+
+Prometheus --> HTTP : GET /metrics
+HTTP --> Collector : render_metrics()
+Collector --> State : snapshot под lock
+Collector --> Readers : collect_once()
+Readers --> Proc : seek + read
+Readers --> State : обновить series
+TLS ..> HTTP : оборачивает server socket
+
+@enduml

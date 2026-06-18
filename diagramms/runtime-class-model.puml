@@ -1,0 +1,46 @@
+@startuml
+title psistat-exporter Runtime Class Model
+
+skinparam classAttributeIconSize 0
+skinparam shadowing false
+
+class PsiCollector {
+    +start()
+    +stop()
+    +collect_once()
+    +render_metrics()
+    -_run()
+    -_count_valid_samples_locked()
+    -_calculate_pct_locked()
+    -_update_events_locked()
+}
+
+class PressureGroup {
+    +tag
+    +fullpath
+    +add_sample()
+    +close()
+}
+
+class MetricsHandler {
+    {static} collector
+    {static} metrics_path
+    +do_GET()
+    +log_message()
+}
+
+class "SimpleNamespace\nSeries" as Series {
+    +micros
+    +avgs
+    +total
+}
+
+class "ThreadingHTTPServer" as Server
+
+PsiCollector "1" o-- "3" PressureGroup : owns
+PsiCollector "1" *-- "6" Series : stats
+MetricsHandler ..> PsiCollector : collector
+Server --> MetricsHandler : request handler
+PressureGroup ..> Series : writes samples
+
+@enduml

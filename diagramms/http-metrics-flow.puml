@@ -1,0 +1,27 @@
+@startuml
+title HTTP Metrics Flow
+
+skinparam shadowing false
+
+actor "Client or Prometheus" as Client
+participant "MetricsHandler" as Handler
+participant "PsiCollector" as Collector
+collections "metrics text lines" as Lines
+
+Client -> Handler : GET request
+alt path is "/" or empty
+    Handler --> Client : 200 text/plain landing
+else path is not metrics_path
+    Handler --> Client : 404
+else path is metrics_path
+    Handler -> Collector : render_metrics()
+    activate Collector
+    Collector -> Collector : acquire lock
+    Collector -> Lines : render stall, totals, events, health
+    Collector -> Collector : release lock
+    Collector --> Handler : Prometheus text payload
+    deactivate Collector
+    Handler --> Client : 200 text/plain; version=0.0.4
+end
+
+@enduml

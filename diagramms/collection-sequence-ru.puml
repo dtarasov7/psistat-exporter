@@ -1,0 +1,31 @@
+@startuml
+title Последовательность сбора PSI
+
+skinparam shadowing false
+
+actor "timer tick" as Tick
+participant "PsiCollector._run" as Run
+participant "PsiCollector.collect_once" as Collect
+participant "PressureGroup.add_sample" as Group
+database "/proc/pressure/*" as Proc
+collections "stats + monos" as State
+participant "PsiCollector._update_events_locked" as Events
+
+Tick -> Run : истек sample interval
+Run -> Collect : collect_once()
+activate Collect
+Collect -> Collect : взять lock
+loop cpu, io, memory
+    Collect -> Group : add_sample()
+    Group -> Proc : seek(0) + read()
+    Proc --> Group : PSI document
+    Group -> State : обновить micros, avg60, avg300, total
+end
+Collect -> State : добавить monotonic timestamp
+Collect -> Collect : посчитать valid samples
+Collect -> State : обрезать stale history
+Collect -> Events : обновить events
+Collect -> Collect : отпустить lock
+deactivate Collect
+
+@enduml
