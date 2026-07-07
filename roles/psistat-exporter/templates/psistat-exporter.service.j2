@@ -1,0 +1,59 @@
+{% set ns = namespace(exec_start=psistat_exporter_python_interpreter ~ ' ' ~ psistat_exporter_bin_dir ~ '/' ~ psistat_exporter_script_name ~ ' --listen-address ' ~ psistat_exporter_listen_address ~ ' --port ' ~ psistat_exporter_port ~ ' --metrics-path ' ~ psistat_exporter_metrics_path ~ ' --sample-interval ' ~ psistat_exporter_sample_interval ~ ' --event-interval ' ~ psistat_exporter_event_interval ~ ' --threshold-pct ' ~ psistat_exporter_threshold_pct) %}
+{% if psistat_exporter_https | bool %}
+{% set ns.exec_start = ns.exec_start ~ ' --tls-cert-file ' ~ psistat_exporter_tls_cert_path ~ ' --tls-key-file ' ~ psistat_exporter_tls_key_path %}
+{% endif %}
+{% if psistat_exporter_extra_args | length > 0 %}
+{% set ns.exec_start = ns.exec_start ~ ' ' ~ (psistat_exporter_extra_args | join(' ')) %}
+{% endif %}
+[Unit]
+Description=psistat-exporter Prometheus exporter for Linux PSI
+Documentation=https://github.com/
+Wants=network-online.target
+After=network-online.target
+StartLimitIntervalSec={{ psistat_exporter_systemd_start_limit_interval_sec }}
+StartLimitBurst={{ psistat_exporter_systemd_start_limit_burst }}
+
+[Service]
+Type=simple
+User={{ psistat_exporter_user }}
+Group={{ psistat_exporter_group }}
+EnvironmentFile={{ psistat_exporter_config_dir }}/{{ psistat_exporter_service_name }}.env
+WorkingDirectory={{ psistat_exporter_install_dir }}
+ExecStart={{ ns.exec_start }}
+Restart={{ psistat_exporter_systemd_restart }}
+RestartSec={{ psistat_exporter_systemd_restart_sec }}
+RuntimeDirectory={{ psistat_exporter_service_name }}
+RuntimeDirectoryMode=0750
+UMask=0077
+StandardOutput=journal
+StandardError=journal
+
+NoNewPrivileges=true
+CapabilityBoundingSet=
+AmbientCapabilities=
+PrivateTmp=true
+PrivateDevices=true
+PrivateMounts=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
+ProtectHostname=true
+ProtectClock=true
+RestrictSUIDSGID=true
+RestrictRealtime=true
+RestrictNamespaces=true
+LockPersonality=true
+MemoryDenyWriteExecute=true
+RemoveIPC=true
+SystemCallArchitectures=native
+{% for syscall_filter in psistat_exporter_systemd_system_call_filter %}
+SystemCallFilter={{ syscall_filter }}
+{% endfor %}
+RestrictAddressFamilies={{ psistat_exporter_systemd_restrict_address_families | join(' ') }}
+ReadOnlyPaths=/proc/pressure
+
+[Install]
+WantedBy=multi-user.target

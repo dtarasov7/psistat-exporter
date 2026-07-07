@@ -25,9 +25,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from types import SimpleNamespace
 
 
-__VERSION__ = "0.1.0"
-__AUTHOR__ = "Dmitry Tarasov"
-
+EXPORTER_VERSION = "0.1.0"
 SAMPLES = 11
 WINDOWS = (1, 3, 10, 60, 300)
 SHORT_WINDOWS = (1, 3, 10)
@@ -430,7 +428,7 @@ class PsiCollector:
             lines = [
                 "# HELP psistat_info Static exporter build information.",
                 "# TYPE psistat_info gauge",
-                "psistat_info" + prom_labels(version=__VERSION__) + " 1",
+                "psistat_info" + prom_labels(version=EXPORTER_VERSION) + " 1",
                 "# HELP psistat_stall_percent PSI stalled time as a percentage for each resource, stall type, and averaging window.",
                 "# TYPE psistat_stall_percent gauge",
             ]
@@ -620,7 +618,7 @@ def parse_args():
         SystemExit: `argparse` exits after invalid input or `--help`.
     """
     parser = argparse.ArgumentParser(
-        description=f"Export Linux PSI metrics in Prometheus format. Version {__VERSION__}"
+        description="Export Linux PSI metrics in Prometheus format."
     )
     parser.add_argument(
         "--listen-address",

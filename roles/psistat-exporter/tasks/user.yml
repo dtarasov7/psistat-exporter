@@ -1,0 +1,18 @@
+---
+- name: user.yml - Ensure psistat-exporter group exists
+  ansible.builtin.group:
+    name: "{{ psistat_exporter_group }}"
+    system: true
+    state: present
+  when: psistat_exporter_manage_group | bool
+
+- name: user.yml - Ensure psistat-exporter user exists
+  ansible.builtin.user:
+    name: "{{ psistat_exporter_user }}"
+    group: "{{ psistat_exporter_group }}"
+    shell: /usr/sbin/nologin
+    home: "{{ psistat_exporter_install_dir }}"
+    create_home: false
+    system: true
+    state: present
+  when: psistat_exporter_manage_user | bool

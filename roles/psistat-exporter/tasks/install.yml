@@ -1,0 +1,84 @@
+---
+- name: install.yml - Install required packages
+  ansible.builtin.package:
+    name: "{{ psistat_exporter_packages }}"
+    state: present
+  when: psistat_exporter_packages | length > 0
+
+- name: install.yml - Check dnf versionlock availability
+  ansible.builtin.command:
+    cmd: dnf versionlock list
+  changed_when: false
+  failed_when: false
+  register: psistat_exporter_dnf_versionlock
+  when:
+    - ansible_pkg_mgr == 'dnf'
+    - psistat_exporter_versionlock_packages | length > 0
+
+- name: install.yml - Configure dnf versionlock packages
+  ansible.builtin.command:
+    cmd: "dnf -y versionlock add {{ item }}"
+  changed_when: false
+  loop: "{{ psistat_exporter_versionlock_packages }}"
+  when:
+    - ansible_pkg_mgr == 'dnf'
+    - psistat_exporter_versionlock_packages | length > 0
+    - psistat_exporter_dnf_versionlock.rc | default(1) == 0
+
+- name: install.yml - Create managed directories
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: directory
+    owner: "{{ item.owner }}"
+    group: "{{ item.group }}"
+    mode: "{{ item.mode }}"
+  loop:
+    - path: "{{ psistat_exporter_install_dir }}"
+      owner: root
+      group: root
+      mode: "0755"
+    - path: "{{ psistat_exporter_bin_dir }}"
+      owner: root
+      group: root
+      mode: "0755"
+    - path: "{{ psistat_exporter_config_dir }}"
+      owner: root
+      group: "{{ psistat_exporter_group }}"
+      mode: "0750"
+    - path: "{{ psistat_exporter_log_dir }}"
+      owner: "{{ psistat_exporter_user }}"
+      group: "{{ psistat_exporter_group }}"
+      mode: "0750"
+    - path: "{{ psistat_exporter_log_archive_dir }}"
+      owner: "{{ psistat_exporter_user }}"
+      group: "{{ psistat_exporter_group }}"
+      mode: "0750"
+    - path: "{{ psistat_exporter_ssl_dir }}"
+      owner: root
+      group: "{{ psistat_exporter_group }}"
+      mode: "0750"
+  loop_control:
+    label: "{{ item.path }}"
+
+- name: install.yml - Install exporter script
+  ansible.builtin.copy:
+    src: "{{ psistat_exporter_source_file }}"
+    dest: "{{ psistat_exporter_bin_dir }}/{{ psistat_exporter_script_name }}"
+    owner: root
+    group: root
+    mode: "0755"
+  notify: psistat_exporter_restart
+
+- name: install.yml - Check installed exporter script
+  ansible.builtin.stat:
+    path: "{{ psistat_exporter_bin_dir }}/{{ psistat_exporter_script_name }}"
+  register: psistat_exporter_installed_script
+
+- name: install.yml - Assert installed exporter script mode
+  ansible.builtin.assert:
+    that:
+      - psistat_exporter_installed_script.stat.exists
+      - psistat_exporter_installed_script.stat.executable
+      - psistat_exporter_installed_script.stat.pw_name == 'root'
+    fail_msg: "Installed exporter script is missing or has unsafe permissions."
+    success_msg: "Installed exporter script is present and executable."

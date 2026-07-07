@@ -1,0 +1,31 @@
+---
+galaxy_info:
+  role_name: psistat_exporter
+  namespace: local
+  author: Tarasov Dmitry
+  description: Install and run psistat-exporter as a hardened systemd service.
+  license: MIT
+  min_ansible_version: "2.12"
+  platforms:
+    - name: EL
+      versions:
+        - "7"
+        - "8"
+        - "9"
+    - name: Debian
+      versions:
+        - bullseye
+        - bookworm
+    - name: Ubuntu
+      versions:
+        - focal
+        - jammy
+        - noble
+  galaxy_tags:
+    - prometheus
+    - exporter
+    - linux
+    - psi
+    - systemd
+
+dependencies: []

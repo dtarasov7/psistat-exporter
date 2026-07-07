@@ -1,0 +1,29 @@
+---
+- name: config.yml - Render environment file
+  ansible.builtin.template:
+    src: psistat-exporter.env.j2
+    dest: "{{ psistat_exporter_config_dir }}/{{ psistat_exporter_service_name }}.env"
+    owner: root
+    group: "{{ psistat_exporter_group }}"
+    mode: "0640"
+  notify: psistat_exporter_restart
+
+- name: config.yml - Render systemd unit file
+  ansible.builtin.template:
+    src: psistat-exporter.service.j2
+    dest: "/etc/systemd/system/{{ psistat_exporter_service_name }}.service"
+    owner: root
+    group: root
+    mode: "0644"
+  notify:
+    - psistat_exporter_daemon_reload
+    - psistat_exporter_restart
+
+- name: config.yml - Flush systemd handlers
+  ansible.builtin.meta: flush_handlers
+
+- name: config.yml - Ensure psistat-exporter service state
+  ansible.builtin.systemd:
+    name: "{{ psistat_exporter_service_name }}"
+    enabled: "{{ psistat_exporter_service_enabled }}"
+    state: "{{ psistat_exporter_service_state }}"

@@ -1,0 +1,15 @@
+---
+- name: ssl.yml - Install TLS certificates
+  ansible.builtin.copy:
+    content: "{{ item.content }}"
+    dest: "{{ psistat_exporter_ssl_dir }}/{{ item.name }}"
+    owner: root
+    group: "{{ psistat_exporter_group }}"
+    mode: "0600"
+    backup: true
+  loop: "{{ psistat_exporter_certificates }}"
+  loop_control:
+    label: "{{ item.name }}"
+  notify: psistat_exporter_restart
+  no_log: "{{ psistat_exporter_no_log }}"
+  when: psistat_exporter_https | bool

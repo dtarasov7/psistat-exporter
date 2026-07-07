@@ -1,0 +1,11 @@
+---
+- name: Converge
+  hosts: all
+  gather_facts: true
+  roles:
+    - role: psistat-exporter
+      vars:
+        psistat_exporter_listen_address: "127.0.0.1"
+        psistat_exporter_port: 9104
+        psistat_exporter_metrics_path: "/metrics"
+        psistat_exporter_validate_psi: false

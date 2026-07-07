@@ -1,0 +1,62 @@
+---
+- name: clean.yml - Stop and disable psistat-exporter service
+  ansible.builtin.systemd:
+    name: "{{ psistat_exporter_service_name }}"
+    state: stopped
+    enabled: false
+  failed_when: false
+  tags:
+    - never
+    - clean
+
+- name: clean.yml - Remove systemd unit file
+  ansible.builtin.file:
+    path: "/etc/systemd/system/{{ psistat_exporter_service_name }}.service"
+    state: absent
+  tags:
+    - never
+    - clean
+
+- name: clean.yml - Reload systemd after unit removal
+  ansible.builtin.systemd:
+    daemon_reload: true
+  tags:
+    - never
+    - clean
+
+- name: clean.yml - Remove managed directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+    - "{{ psistat_exporter_install_dir }}"
+    - "{{ psistat_exporter_config_dir }}"
+    - "{{ psistat_exporter_log_dir }}"
+  tags:
+    - never
+    - clean
+
+- name: clean.yml - Remove psistat-exporter user
+  ansible.builtin.user:
+    name: "{{ psistat_exporter_user }}"
+    state: absent
+    remove: false
+  when: psistat_exporter_manage_user | bool
+  tags:
+    - never
+    - clean
+
+- name: clean.yml - Remove psistat-exporter group
+  ansible.builtin.group:
+    name: "{{ psistat_exporter_group }}"
+    state: absent
+  when: psistat_exporter_manage_group | bool
+  tags:
+    - never
+    - clean
+
+- name: clean.yml - End play after clean
+  ansible.builtin.meta: end_play
+  tags:
+    - never
+    - clean

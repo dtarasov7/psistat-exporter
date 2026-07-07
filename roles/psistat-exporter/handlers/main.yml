@@ -1,0 +1,10 @@
+---
+- name: psistat_exporter_daemon_reload
+  ansible.builtin.systemd:
+    daemon_reload: true
+
+- name: psistat_exporter_restart
+  ansible.builtin.systemd:
+    name: "{{ psistat_exporter_service_name }}"
+    state: restarted
+  when: psistat_exporter_service_state == 'started'

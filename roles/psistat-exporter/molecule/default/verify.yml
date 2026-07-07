@@ -1,0 +1,45 @@
+---
+- name: Verify
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: verify.yml - Check service is active
+      ansible.builtin.command:
+        cmd: systemctl is-active psistat-exporter
+      changed_when: false
+      register: psistat_exporter_verify_service
+
+    - name: verify.yml - Assert service is active
+      ansible.builtin.assert:
+        that:
+          - psistat_exporter_verify_service.stdout == 'active'
+
+    - name: verify.yml - Query metrics endpoint
+      ansible.builtin.uri:
+        url: http://127.0.0.1:9104/metrics
+        return_content: true
+      register: psistat_exporter_verify_metrics
+      retries: 10
+      delay: 2
+      until: psistat_exporter_verify_metrics.status == 200
+
+    - name: verify.yml - Assert metrics are exposed
+      ansible.builtin.assert:
+        that:
+          - "'psistat_info' in psistat_exporter_verify_metrics.content"
+          - "'psistat_collection_success' in psistat_exporter_verify_metrics.content"
+
+    - name: verify.yml - Read systemd unit
+      ansible.builtin.command:
+        cmd: systemctl cat psistat-exporter
+      changed_when: false
+      register: psistat_exporter_verify_unit
+
+    - name: verify.yml - Assert hardening directives are present
+      ansible.builtin.assert:
+        that:
+          - "'NoNewPrivileges=true' in psistat_exporter_verify_unit.stdout"
+          - "'ProtectSystem=strict' in psistat_exporter_verify_unit.stdout"
+          - "'PrivateTmp=true' in psistat_exporter_verify_unit.stdout"
+          - "'CapabilityBoundingSet=' in psistat_exporter_verify_unit.stdout"
+          - "'RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6' in psistat_exporter_verify_unit.stdout"

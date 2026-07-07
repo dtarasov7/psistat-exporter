@@ -1,5 +1,7 @@
 # psistat-exporter
 
+[![Версия](https://img.shields.io/badge/version-0.1.0-blue)](CHANGELOG-ru.md)
+
 psistat-exporter это Prometheus exporter для Linux PSI (Pressure Stall Information).
 Он читает PSI-данные Linux и публикует их по HTTP или HTTPS в формате Prometheus text exposition.
 
@@ -56,6 +58,7 @@ Exporter собирает PSI-данные из:
 - `psistat_event_total{resource,stall,window}`
 - `psistat_event_last_timestamp_seconds{resource,stall,window}`
 - `psistat_event_last_percent{resource,stall,window}`
+- `psistat_info{version}`
 
 Служебные метрики exporter'а:
 
@@ -141,7 +144,17 @@ scrape_configs:
     static_configs:
       - targets:
           - 127.0.0.1:9104
+        labels:
+          env: lab
+          group: local
 ```
+
+## Grafana dashboard
+
+Dashboard находится в `grafana/psistat-exporter-dashboard.json`.
+Он использует переменную Prometheus datasource с именем `datasource`, поэтому при импорте в Grafana не должен требоваться ручной выбор datasource.
+Время dashboard отображается в timezone браузера, базовые фильтры: `job`, `env`, `group`, `instance`, `resource` и `interval`.
+Задайте `env` и `group` как Prometheus scrape labels, как в примере выше, чтобы dashboard корректно строил иерархию instance.
 
 ## Примечания
 

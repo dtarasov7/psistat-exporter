@@ -1,0 +1,69 @@
+---
+- name: pre-req.yml - Assert supported Linux and systemd target
+  ansible.builtin.assert:
+    that:
+      - ansible_system == 'Linux'
+      - ansible_service_mgr == 'systemd'
+      - ansible_os_family in ['RedHat', 'Debian'] or (ansible_distribution | lower) in ['redos', 'red os', 'redos7', 'red os 7']
+    fail_msg: "psistat-exporter role requires Linux with systemd on RedHat/RedOS/Debian-compatible systems."
+    success_msg: "Supported OS and init system detected."
+
+- name: pre-req.yml - Assert exporter runtime variables
+  ansible.builtin.assert:
+    that:
+      - psistat_exporter_port | int > 0
+      - psistat_exporter_port | int < 65536
+      - psistat_exporter_metrics_path is match('^/')
+      - psistat_exporter_sample_interval | float > 0
+      - psistat_exporter_event_interval | int in [1, 3, 10, 60, 300]
+      - psistat_exporter_threshold_pct | int >= 1
+      - psistat_exporter_threshold_pct | int <= 99
+    fail_msg: "Invalid psistat-exporter runtime settings."
+    success_msg: "psistat-exporter runtime settings are valid."
+
+- name: pre-req.yml - Check exporter source file on controller
+  ansible.builtin.stat:
+    path: "{{ psistat_exporter_source_file }}"
+  delegate_to: localhost
+  become: false
+  register: psistat_exporter_source_stat
+
+- name: pre-req.yml - Assert exporter source file exists
+  ansible.builtin.assert:
+    that:
+      - psistat_exporter_source_stat.stat.exists
+      - psistat_exporter_source_stat.stat.isreg
+    fail_msg: "Exporter source file not found: {{ psistat_exporter_source_file }}"
+    success_msg: "Exporter source file found."
+
+- name: pre-req.yml - Check PSI files
+  ansible.builtin.stat:
+    path: "/proc/pressure/{{ item }}"
+  loop:
+    - cpu
+    - io
+    - memory
+  register: psistat_exporter_psi_files
+  when: psistat_exporter_validate_psi | bool
+
+- name: pre-req.yml - Assert PSI files are readable
+  ansible.builtin.assert:
+    that:
+      - item.stat.exists
+      - item.stat.readable
+    fail_msg: "Required PSI file is not readable: {{ item.stat.path }}"
+    success_msg: "Required PSI file is readable: {{ item.stat.path }}"
+  loop: "{{ psistat_exporter_psi_files.results | default([]) }}"
+  loop_control:
+    label: "{{ item.stat.path | default('unknown') }}"
+  when: psistat_exporter_validate_psi | bool
+
+- name: pre-req.yml - Include TLS pre-checks
+  ansible.builtin.include_tasks:
+    file: pre-req-ssl.yml
+    apply:
+      tags:
+        - certs
+  when: psistat_exporter_https | bool
+  tags:
+    - certs

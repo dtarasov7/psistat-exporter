@@ -1,0 +1,94 @@
+---
+psistat_exporter_version: "0.1.0"
+
+psistat_exporter_service_name: "psistat-exporter"
+psistat_exporter_user: "psistat-exporter"
+psistat_exporter_group: "psistat-exporter"
+psistat_exporter_manage_user: true
+psistat_exporter_manage_group: true
+
+psistat_exporter_install_dir: "/opt/psistat-exporter"
+psistat_exporter_bin_dir: "{{ psistat_exporter_install_dir }}/bin"
+psistat_exporter_config_dir: "/etc/psistat-exporter"
+psistat_exporter_log_dir: "/var/log/psistat-exporter"
+psistat_exporter_log_archive_dir: "{{ psistat_exporter_log_dir }}/archive"
+psistat_exporter_ssl_dir: "{{ psistat_exporter_config_dir }}/ssl"
+
+psistat_exporter_script_name: "psistat-exporter.py"
+psistat_exporter_source_file: "{{ role_path }}/files/psistat-exporter.py"
+psistat_exporter_python_interpreter: "/usr/bin/python3"
+psistat_exporter_packages:
+  - python3
+psistat_exporter_versionlock_packages: []
+
+psistat_exporter_listen_address: "0.0.0.0"
+psistat_exporter_port: 9104
+psistat_exporter_metrics_path: "/metrics"
+psistat_exporter_sample_interval: 1.0
+psistat_exporter_event_interval: 10
+psistat_exporter_threshold_pct: 5
+psistat_exporter_extra_args: []
+
+psistat_exporter_service_enabled: true
+psistat_exporter_service_state: "started"
+psistat_exporter_validate_psi: true
+
+psistat_exporter_hashi_vault_path: ""
+# psistat_exporter_hashi_vault_path: "secret=opensource-{{ project_name }}/data/cert/{{ inventory_hostname_short | lower }}:"
+# psistat_exporter_hashi_vault_path_root: "secret=opensource-{{ project_name }}/data/cert/root:"
+psistat_exporter_hashi_vault_path_root: ""
+psistat_exporter_hashi_vault_path_certificates: "{{ psistat_exporter_hashi_vault_path }}"
+
+psistat_exporter_certfile: "{{ inventory_hostname_short | lower }}.cer"
+psistat_exporter_cerkeyfile: "{{ inventory_hostname_short | lower }}.key"
+psistat_exporter_cacertfile: "root.cer"
+psistat_exporter_local_certs_path: "./certs/"
+
+psistat_exporter_https: false
+psistat_exporter_no_log: true
+psistat_exporter_tls_cert_path: "{{ psistat_exporter_ssl_dir }}/{{ psistat_exporter_certfile | basename }}"
+psistat_exporter_tls_key_path: "{{ psistat_exporter_ssl_dir }}/{{ psistat_exporter_cerkeyfile | basename }}"
+
+psistat_exporter_certificates:
+  - name: "{{ psistat_exporter_cacertfile | basename }}"
+    content: >-
+      {% if psistat_exporter_hashi_vault_path_certificates | length > 0 %}
+      {{ lookup('hashi_vault', psistat_exporter_hashi_vault_path_root + (psistat_exporter_cacertfile | basename)) }}
+      {% else %}
+      {{ lookup('file', psistat_exporter_local_certs_path + psistat_exporter_cacertfile) }}
+      {% endif %}
+  - name: "{{ psistat_exporter_certfile | basename }}"
+    content: >-
+      {% if psistat_exporter_hashi_vault_path_certificates | length > 0 %}
+      {{ lookup('hashi_vault', psistat_exporter_hashi_vault_path_certificates + (psistat_exporter_certfile | basename)) }}
+      {% else %}
+      {{ lookup('file', psistat_exporter_local_certs_path + psistat_exporter_certfile) }}
+      {% endif %}
+  - name: "{{ psistat_exporter_cerkeyfile | basename }}"
+    content: >-
+      {% if psistat_exporter_hashi_vault_path_certificates | length > 0 %}
+      {{ lookup('hashi_vault', psistat_exporter_hashi_vault_path_certificates + (psistat_exporter_cerkeyfile | basename)) }}
+      {% else %}
+      {{ lookup('file', psistat_exporter_local_certs_path + psistat_exporter_cerkeyfile) }}
+      {% endif %}
+
+psistat_exporter_systemd_restart: "on-failure"
+psistat_exporter_systemd_restart_sec: "5s"
+psistat_exporter_systemd_start_limit_interval_sec: 60
+psistat_exporter_systemd_start_limit_burst: 5
+
+psistat_exporter_systemd_restrict_address_families:
+  - AF_UNIX
+  - AF_INET
+  - AF_INET6
+psistat_exporter_systemd_system_call_filter:
+  - "@system-service"
+  - "~@privileged"
+  - "~@resources"
+  - "~@obsolete"
+  - "~@debug"
+  - "~@mount"
+  - "~@swap"
+  - "~@reboot"
+  - "~@module"
+  - "~@raw-io"

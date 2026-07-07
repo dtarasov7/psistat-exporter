@@ -1,0 +1,26 @@
+---
+- name: pre-req-ssl.yml - Check Hashicorp Vault certificate path
+  ansible.builtin.assert:
+    that:
+      - psistat_exporter_certificates[0]
+    fail_msg: "Invalid Vault token or certificate path not found."
+    success_msg: "Vault certificate path is available."
+  run_once: true
+  no_log: "{{ psistat_exporter_no_log }}"
+  when: psistat_exporter_hashi_vault_path_certificates | length > 0
+  tags:
+    - certs
+
+- name: pre-req-ssl.yml - Check certificate content
+  ansible.builtin.assert:
+    that:
+      - item.content | length > 0
+    fail_msg: "Certificate content not found for {{ item.name }}"
+    success_msg: "Certificate content found for {{ item.name }}"
+    quiet: true
+  loop: "{{ psistat_exporter_certificates }}"
+  loop_control:
+    label: "{{ item.name }}"
+  no_log: "{{ psistat_exporter_no_log }}"
+  tags:
+    - certs
